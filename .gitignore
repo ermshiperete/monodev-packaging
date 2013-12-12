@@ -1,0 +1,9 @@
+*~
+*.old
+*/
+g*
+libgdiplus*
+mono*
+vala*
+xulrunner*
+test.sh
