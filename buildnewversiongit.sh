@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build a new MonoDevelop version from the git repos
-export VERSION=4.3.0
-export PREVVERSION=4.2.2
+export VERSION=4.3.4
+export PREVVERSION=4.3.2
 export PACKAGEVERSION=4.0
 export PREVPACKAGEVERSION=4.0
 # REPO specifies the launchpad project where the package should end up. This should probably
@@ -10,6 +10,9 @@ export PREVPACKAGEVERSION=4.0
 
 [ -z "${MODULES}" ] && MODULES="monodevelop monodevelop-debugger-gdb monodevelop-database"
 WHERE=$(pwd)
+
+# Prevent suffix adding to package names
+export NOSUFFIX=1
 
 set -e
 
@@ -88,7 +91,10 @@ if [ ! "${NOBUILD}" ]; then
 			SUBDIR=extras/ValaBinding
 			;;
 		esac
-		cp -a $WHERE/monodevelop/$SUBDIR $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+		mkdir -p $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+		cp -a $WHERE/monodevelop/$SUBDIR/* $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+		cp -a $WHERE/monodevelop/version.config $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+		cp -a $WHERE/monodevelop/scripts $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
 		cd $WHERE
 		tar cfj ${MODULE}-${PACKAGEVERSION}_${VERSION}.orig.tar.bz2 ${MODULE}-${PACKAGEVERSION}-${VERSION}
 		if [ ! -d "${MODULE}-${PACKAGEVERSION}-${VERSION}/debian" ]; then
@@ -106,9 +112,26 @@ if [ ! "${NOBUILD}" ]; then
 			fi
 			sed 's/monodevelop-'${PACKAGEVERSION}' (>= [0-9.]*)/monodevelop-'${PACKAGEVERSION}' (>= '${VERSION}')/' < /tmp/control > control
 		fi
+		# Update version information
+		if [ "$MODULE" = "monodevelop" ]; then
+			cd $WHERE/monodevelop/main
+			mkdir -p build/bin
+			../scripts/configure.sh gen-buildinfo "./build/bin"
+			cd $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+			quilt push -a
+			if [ "$(quilt top)" != "buildinfo.patch" ]; then
+				quilt new buildinfo.patch
+				quilt add build/bin/buildinfo
+			fi
+			cp -a $WHERE/monodevelop/main/build/bin build/
+			quilt refresh
+			quilt pop -a
+		fi
+
 		cd $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
 		# to force building/uploading of *.orig.tar.bz2 call: pdebuild --debbuildopts -sa
 		pdebuild
+		echo "***************** local dput ****************"
 		cd /var/cache/pbuilder/$(lsb_release -c -s)-$(dpkg --print-architecture)/result/
 		dput $FORCE local ${MODULE}-${PACKAGEVERSION}_${VERSION}*.changes
 		cd $WHERE
@@ -119,7 +142,7 @@ if [ ! "${NOUPLOAD}" ]; then
 	echo "******************** Uploading changes **********************"
 	for MODULE in $MODULES
 	do
-		debsign ${MODULE}-${PACKAGEVERSION}_${VERSION}*source.changes
-		dput ppa:ermshiperete/${REPO} ${MODULE}-${PACKAGEVERSION}_${VERSION}*source.changes
+		debsign ${MODULE}-${PACKAGEVERSION}_${VERSION}-*source.changes
+		dput ppa:ermshiperete/${REPO} ${MODULE}-${PACKAGEVERSION}_${VERSION}-*source.changes
 	done
 fi

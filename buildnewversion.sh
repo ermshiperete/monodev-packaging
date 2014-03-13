@@ -1,7 +1,7 @@
 #!/bin/bash
-export VERSION=4.2
+export VERSION=4.2.2
 export DOWNLOADREV=-2
-export PREVVERSION=4.0.13
+export PREVVERSION=4.2
 export PACKAGEVERSION=4.0
 export PREVPACKAGEVERSION=4.0
 # REPO specifies the launchpad project where the package should end up. This should probably

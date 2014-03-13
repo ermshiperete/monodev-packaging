@@ -1,14 +1,14 @@
 #!/bin/bash
-export VERSION=3.2.8
-export DOWNLOADREV=
-export PREVVERSION=3.2.6
-export PACKAGEVERSION=3
-export PREVPACKAGEVERSION=3
+MODULE=xsp
+VERSION=3.0.11
+DOWNLOADREV=
+PREVVERSION=3.0.11
+PACKAGEVERSION=3
+PREVPACKAGEVERSION=3
+PPAUSERNAME=ermshiperete
 # REPO specifies the launchpad project where the package should end up. This should probably
 # be monodevelop or monodevelop-beta
 [ -z "${REPO}" ] && REPO=monodevelop-beta
-[ -z "${MODULE}" ] && MODULE="mono"
-export TAG_VERSION=$MODULE-$VERSION
 
 . $(dirname "$0")/buildnewcommongit.sh
 

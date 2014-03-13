@@ -4,6 +4,10 @@ if [ -z "$VERSION" ]; then
 	exit 1
 fi
 
+[ -z "${PACKAGE_NAME}" ] && PACKAGE_NAME=$MODULE
+[ -z "${TAG_VERSION}" ] && TAG_VERSION=$VERSION
+[ -z "${PPAUSERNAME}" ] && PPAUSERNAME=ermshiperete
+
 build()
 {
 	WHERE=$(pwd)
@@ -23,7 +27,7 @@ build()
 	git reset --hard
 	git clean -dxf -e debian
 	git fetch origin
-	git checkout ${VERSION}
+	git checkout ${TAG_VERSION}
 	git submodule update --init
 	cd $WHERE
 
@@ -31,17 +35,17 @@ build()
 		sudo -v
 		echo "**************** Processing ${MODULE} *******************"
 		if [ ! -f "${MODULE}-${PACKAGEVERSION}_${VERSION}.orig.tar.bz2" ]; then
-			mkdir -p $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
-			cp -a $WHERE/$MODULE/* $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+			mkdir -p $WHERE/${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}
+			cp -a $WHERE/$MODULE/* $WHERE/${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}
 			cd $WHERE
 			echo "Creating source package"
-			tar cfj ${MODULE}-${PACKAGEVERSION}_${VERSION}.orig.tar.bz2 ${MODULE}-${PACKAGEVERSION}-${VERSION}
+			tar cfj ${PACKAGE_NAME}-${PACKAGEVERSION}_${VERSION}.orig.tar.bz2 ${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}
 		fi
-		if [ ! -d "${MODULE}-${PACKAGEVERSION}-${VERSION}/debian" ]; then
+		if [ ! -d "${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}/debian" ]; then
 			echo "Creating debian directory"
-			cp -r ${MODULE}-${PREVPACKAGEVERSION}-${PREVVERSION}/debian ${MODULE}-${PACKAGEVERSION}-${VERSION}/
-			cd ${MODULE}-${PACKAGEVERSION}-${VERSION}/debian
-			dch --newversion ${VERSION}-1 --package ${MODULE}-${PACKAGEVERSION} --check-dirname-level 0 "New upstream release ${VERSION}"
+			cp -r ${PACKAGE_NAME}-${PREVPACKAGEVERSION}-${PREVVERSION}/debian ${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}/
+			cd ${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}/debian
+			dch --newversion ${VERSION}-1 --package ${PACKAGE_NAME}-${PACKAGEVERSION} --check-dirname-level 0 "New upstream release ${VERSION}"
 			mv control /tmp/control
 			if [ "${PREVPACKAGEVERSION}" != "${PACKAGEVERSION}" ]
 			then
@@ -51,20 +55,22 @@ build()
 				echo "Please adjust the patches, then exit the subshell"
 				bash
 			fi
-			sed 's/${MODULE}-'${PACKAGEVERSION}' (>= [0-9.]*)/${MODULE}-'${PACKAGEVERSION}' (>= '${VERSION}')/' < /tmp/control > control
+			sed 's/${PACKAGE_NAME}-'${PACKAGEVERSION}' (>= [0-9.]*)/${PACKAGE_NAME}-'${PACKAGEVERSION}' (>= '${VERSION}')/' < /tmp/control > control
 		fi
 		echo "Starting build"
-		cd $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
+		cd $WHERE/${PACKAGE_NAME}-${PACKAGEVERSION}-${VERSION}
 		# to force building/uploading of *.orig.tar.bz2 call: pdebuild --debbuildopts -sa
-		pdebuild
+		AUTO_DEBSIGN=no pdebuild
 		cd /var/cache/pbuilder/$(lsb_release -c -s)-$(dpkg --print-architecture)/result/
-		dput $FORCE local ${MODULE}-${PACKAGEVERSION}_${VERSION}*.changes
+		echo "Signing changes file"
+		debsign -k42CDA9D8 ${PACKAGE_NAME}-${PACKAGEVERSION}_${VERSION}*.changes
+		dput $FORCE local ${PACKAGE_NAME}-${PACKAGEVERSION}_${VERSION}*.changes
 		cd $WHERE
 	fi
 
 	if [ ! "${NOUPLOAD}" ]; then
 		echo "******************** Uploading changes **********************"
-		debsign $(ls ${MODULE}-${PACKAGEVERSION}_${VERSION}*_source.changes | sort -n -r | head -1)
-		dput ppa:$PPAUSERNAME/${REPO} $(ls ${MODULE}-${PACKAGEVERSION}_${VERSION}*_source.changes | sort -n -r | head -1)
+		debsign $(ls ${PACKAGE_NAME}-${PACKAGEVERSION}_${VERSION}*_source.changes | sort -n -r | head -1)
+		dput ppa:$PPAUSERNAME/${REPO} $(ls ${PACKAGE_NAME}-${PACKAGEVERSION}_${VERSION}*_source.changes | sort -n -r | head -1)
 	fi
 }
