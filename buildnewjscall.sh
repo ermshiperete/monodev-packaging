@@ -1,14 +1,15 @@
 #!/bin/bash
-export VERSION=3.4.0
-export DOWNLOADREV=
-export PREVVERSION=3.2.8
-export PACKAGEVERSION=3
-export PREVPACKAGEVERSION=3
+MODULE=jscall-sharp
+VERSION=0.0.1
+DOWNLOADREV=
+PREVVERSION=0.0.0
+PACKAGEVERSION=0
+PREVPACKAGEVERSION=0
+PPAUSERNAME=ermshiperete
+TAG_VERSION=master
 # REPO specifies the launchpad project where the package should end up. This should probably
 # be monodevelop or monodevelop-beta
 [ -z "${REPO}" ] && REPO=monodevelop-beta
-[ -z "${MODULE}" ] && MODULE="mono"
-export TAG_VERSION=$MODULE-$VERSION
 
 . $(dirname "$0")/buildnewcommongit.sh
 

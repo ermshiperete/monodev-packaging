@@ -8,6 +8,11 @@ fi
 [ -z "${TAG_VERSION}" ] && TAG_VERSION=$VERSION
 [ -z "${PPAUSERNAME}" ] && PPAUSERNAME=ermshiperete
 
+# Prevent suffix adding to package names
+export NOSUFFIX=1
+
+set -e
+
 build()
 {
 	WHERE=$(pwd)

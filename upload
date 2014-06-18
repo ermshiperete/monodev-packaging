@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ -d debian ]; then
+	echo "Need to be in monodev directory"
+	exit 1
+fi
+
+set -e
+
+cd /var/cache/pbuilder/$(lsb_release -c -s)-$(dpkg --print-architecture)/result/
+echo "Signing changes file"
+debsign -k42CDA9D8 $1*.changes
+dput $FORCE local $1*.changes
+cd -
+
+echo "******************** Uploading changes **********************"
+debsign $(ls $1*_source.changes | sort -n -r | head -1)
+dput ppa:ermshiperete/${2:-monodevelop-beta} $(ls $1*_source.changes | sort -n -r | head -1)
