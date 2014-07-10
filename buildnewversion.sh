@@ -1,15 +1,18 @@
 #!/bin/bash
-export VERSION=5.0
+export VERSION=5.0.1
 export DOWNLOADREV=-0
-export PREVVERSION=4.2.2
+export PREVVERSION=5.0
 export PACKAGEVERSION=5
-export PREVPACKAGEVERSION=4.0
+export PREVPACKAGEVERSION=5
 # REPO specifies the launchpad project where the package should end up. This should probably
 # be monodevelop or monodevelop-beta
 [ -z "${REPO}" ] && REPO=monodevelop
 
 [ -z "${MODULES}" ] && MODULES="monodevelop monodevelop-debugger-gdb monodevelop-database"
 WHERE=$(pwd)
+
+# Prevent suffix adding to package names
+export NOSUFFIX=1
 
 set -e
 
@@ -45,6 +48,7 @@ if [ ! "${NOBUILD}" ]; then
 		fi
 		# to force building/uploading of *.orig.tar.bz2 call: pdebuild --debbuildopts -sa
 		pdebuild
+		echo "***************** local dput ****************"
 		cd /var/cache/pbuilder/$(lsb_release -c -s)-$(dpkg --print-architecture)/result/
 		dput $FORCE local ${MODULE}-${PACKAGEVERSION}_${VERSION}*.changes
 		cd $WHERE
@@ -55,7 +59,9 @@ if [ ! "${NOUPLOAD}" ]; then
 	echo "******************** Uploading changes **********************"
 	for MODULE in $MODULES
 	do
-		debsign ${MODULE}-${PACKAGEVERSION}_${VERSION}-*source.changes
-		dput ppa:ermshiperete/${REPO} ${MODULE}-${PACKAGEVERSION}_${VERSION}-*source.changes
+		for f in ${MODULE}-${PACKAGEVERSION}_${VERSION}-*source.changes; do
+			debsign --no-re-sign $f
+			dput ppa:ermshiperete/${REPO} $f
+		done
 	done
 fi

@@ -53,17 +53,13 @@ if [ ! "${NOBUILD}" ]; then
 		cp -r ${PACKAGENAME}-${PREVPACKAGEVERSION}-${PREVVERSION}/debian ${PACKAGENAME}-${PACKAGEVERSION}-${VERSION}/
 		cd ${PACKAGENAME}-${PACKAGEVERSION}-${VERSION}/debian
 		dch --newversion ${VERSION}-1 --package ${PACKAGENAME}-${PACKAGEVERSION} --check-dirname-level 0 "New upstream release ${VERSION}"
-		mv control /tmp/control
 		if [ "${PREVPACKAGEVERSION}" != "${PACKAGEVERSION}" ]
 		then
-			sed -e 's/\(monodevelop.*-\)'${PREVPACKAGEVERSION}'/\1'${PACKAGEVERSION}'/g' -e 's/\(Replaces\: monodevelop.*-\)[0-9.]*/\1'${PREVPACKAGEVERSION}'/' < /tmp/control > /tmp/control2
-			mv /tmp/control2 /tmp/control
 			echo
 			echo "Please adjust the patches, then exit the subshell"
 			bash
 			echo "Building ${PACKAGENAME}..."
 		fi
-		sed 's/monodevelop-'${PACKAGEVERSION}' (>= [0-9.]*)/monodevelop-'${PACKAGEVERSION}' (>= '${VERSION}')/' < /tmp/control > control
 	fi
 
 	cd $WHERE/${PACKAGENAME}-${PACKAGEVERSION}-${VERSION}

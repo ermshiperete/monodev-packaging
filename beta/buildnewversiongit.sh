@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build a new MonoDevelop version from the git repos
-export VERSION=5.1.0.462
-export PREVVERSION=5.0.1.3
+export VERSION=5.1.2.0
+export PREVVERSION=5.1.1.19
 export PACKAGEVERSION=5
 export PREVPACKAGEVERSION=5
 export TAG_VERSION=${VERSION}
