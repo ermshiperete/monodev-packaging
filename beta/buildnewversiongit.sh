@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build a new MonoDevelop version from the git repos
-export VERSION=5.1.2.0
-export PREVVERSION=5.1.1.19
+export VERSION=5.4.0.194
+export PREVVERSION=5.4.0.178
 export PACKAGEVERSION=5
 export PREVPACKAGEVERSION=5
 export TAG_VERSION=${VERSION}
@@ -119,8 +119,8 @@ if [ ! "${NOBUILD}" ]; then
 			fi
 			sed 's/monodevelop-'${PACKAGEVERSION}' (>= [0-9.]*)/monodevelop-'${PACKAGEVERSION}' (>= '${VERSION}')/' < /tmp/control > control
 		fi
-		# Update version information
 		if [ "$MODULE" = "monodevelop" ]; then
+			# Update version information
 			echo "Update version information"
 			cd $WHERE/monodevelop/main
 			mkdir -p build/bin
@@ -134,6 +134,45 @@ if [ ! "${NOBUILD}" ]; then
 			cp -a $WHERE/monodevelop/main/build/bin build/
 			quilt refresh
 			quilt pop -a > /dev/null
+
+			# Update NuGet packages
+			echo "Update nuget packages"
+			cd $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}/
+			quilt push -a
+			quilt pop 2
+			if [ "$(quilt top)" = "nuget-packages.patch" ]; then
+				quilt pop 1
+			fi
+			TMPNUGETBASE=/tmp/${MODULE}
+			TMPNUGETDIR=$TMPNUGETBASE/${MODULE}-${PACKAGEVERSION}-${VERSION}/
+			TMPNUGETORIG=$TMPNUGETBASE/orig
+			mkdir -p $TMPNUGETBASE
+			[ -d $TMPNUGETORIG ] || cp -a $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}/ $TMPNUGETORIG
+			rm -rf $TMPNUGETDIR || true
+			cp -a $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}/ $TMPNUGETDIR
+			echo "Restoring packages in src/addins/AspNet/"
+			pushd $TMPNUGETDIR/src/addins/AspNet/
+			mono $TMPNUGETDIR/external/nuget-binary/NuGet.exe restore -SolutionDirectory $TMPNUGETDIR
+			echo "Restoring packages in src/addins/NUnit/NUnitRunner/"
+			cd $TMPNUGETDIR/src/addins/NUnit/NUnitRunner/
+			mono $TMPNUGETDIR/external/nuget-binary/NuGet.exe restore -SolutionDirectory $TMPNUGETDIR
+			popd
+#
+#			NUGETPACKS=$(find . -name packages.config)
+#			for p in $NUGETPACKS; do
+#				PACKDIR=$(dirname $p)
+#				if grep -q -i nuget $PACKDIR/*; then
+#					echo "Restoring packages in $PACKDIR"
+#					pushd $PACKDIR
+#					mono $TMPNUGETDIR/external/nuget-binary/NuGet.exe restore -SolutionDirectory $TMPNUGETDIR || true
+#					popd
+#				fi
+#			done
+			pushd $TMPNUGETBASE
+			diff -Naur orig/packages ${MODULE}-${PACKAGEVERSION}-${VERSION}/packages > /tmp/nuget-packages.patch || true
+			popd
+			quilt import -d n -f /tmp/nuget-packages.patch
+			quilt pop -a
 		fi
 
 		cd $WHERE/${MODULE}-${PACKAGEVERSION}-${VERSION}
